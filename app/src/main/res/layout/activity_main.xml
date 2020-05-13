@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  Copyright (C) 2018 The Android Open Source Project
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <!--viewModel 是没有UI相关的,所以必须通过数据绑定（即布局表达式），从而使UI和viewModel关联起来
+        布局表达式里面的空间是可以自定义属性的-->
+        <variable
+            name="viewmodel"
+            type="com.qihoo.samples.twowaysample.data.IntervalTimerViewModel" />
+
+        <import type="com.qihoo.samples.twowaysample.util.Converter" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:theme="@style/AppTheme">
+        <!--
+        (1)@{}属于单项绑定，是观察值变化->更新view（属性）
+        (2)@={}是双向绑定,观察值变化更新view属性，view属性变化随时更新观察值
+        注释：当观察值更新到view的时候，有以下四种情况：
+        ①view有属性值，且属性值有对应的set方法，则就可以直接更新
+        ②view有属性值，且属性值有对应set方法，但是set方法的参数与观察值不一致，则需要转换BindingConversion
+        ③view有属性值，没有对应set方法，但有相同功能的方法，可以把属性绑定到这个方法上去，通过BindingMethod
+        ④view没有属性值，所以需要自定义属性，然后通过BindingAdapter，去绑定自定义的方法，从而去更新view
+        -->
+        <ToggleButton
+            android:id="@+id/startPause"
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:checked="@={viewmodel.timerRunning}"
+            android:focusable="true"
+            android:textOff="@string/start"
+            android:textOn="@string/pause"
+            app:layout_constraintBottom_toTopOf="@id/displayFirstTime"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1"
+            app:layout_constraintStart_toEndOf="@id/reset"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/reset"
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:text="@string/stop"
+            app:layout_constraintBottom_toTopOf="@id/displayFirstTime"
+            app:layout_constraintEnd_toStartOf="@id/startPause"
+            app:layout_constraintHorizontal_bias="1"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toEndOf="@id/setsIncrease"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/displayFirstTime"
+            animateBackground="@{viewmodel.timerRunning}"
+            animateBackgroundStage="@{viewmodel.firstWorking}"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="@{Converter.fromTenthsToSeconds(viewmodel.firstTimeDisplayTime)}"
+            android:textAlignment="center"
+            android:textColor="@color/secondaryDarkColor"
+            app:autoSizeTextType="uniform"
+            app:layout_constraintBottom_toTopOf="@id/setFirstTime"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/startPause"
+            app:layout_constraintVertical_bias="0.0"
+            app:layout_constraintVertical_chainStyle="spread_inside"
+            tools:text="15:55" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/displaySecondTime"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textAlignment="center"
+            android:textColor="@color/secondaryDarkColor"
+            app:autoSizeTextType="uniform"
+            app:layout_constraintBottom_toTopOf="@id/setSecondTime"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/firstProgressBar"
+            tools:text="5:55" />
+
+        <EditText
+            android:id="@+id/setFirstTime"
+            android:layout_width="64dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="0dp"
+            android:digits=",.:0123456789"
+            android:imeOptions="actionDone"
+            android:inputType="time"
+            android:maxLines="1"
+            android:text="@{Converter.fromTenthsToSeconds(viewmodel.firstTimePerSetValue)}"
+            android:textAlignment="center"
+            loseFocusWhen="@{viewmodel.timerRunning}"
+            app:layout_constraintBottom_toTopOf="@id/firstProgressBar"
+            app:layout_constraintEnd_toStartOf="@id/firstPlus"
+            app:layout_constraintStart_toEndOf="@id/firstMinus"
+            app:layout_constraintTop_toBottomOf="@id/displayFirstTime"
+            tools:text="15:34" />
+
+        <EditText
+            android:id="@+id/setSecondTime"
+            android:layout_width="64dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="0dp"
+            android:digits=",.:0123456789"
+            android:ems="10"
+            android:imeOptions="actionDone"
+            android:inputType="time"
+            android:maxLines="1"
+            android:textAlignment="center"
+            app:layout_constraintBottom_toTopOf="@id/secondProgressBar"
+            app:layout_constraintEnd_toStartOf="@id/secondPlus"
+            app:layout_constraintStart_toEndOf="@id/secondMinus"
+            app:layout_constraintTop_toBottomOf="@id/displaySecondTime"
+            tools:text="15:50" />
+
+        <!--android:onClick 接收的是一个函数-->
+        <Button
+            android:id="@+id/firstPlus"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:onClick="@{()->viewmodel.firstTimeIncrease()}"
+            android:text="@string/plus_sign"
+            app:layout_constraintBottom_toTopOf="@id/firstProgressBar"
+            app:layout_constraintEnd_toEndOf="@id/firstProgressBar"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toEndOf="@id/setFirstTime"
+            app:layout_constraintTop_toBottomOf="@id/displayFirstTime"
+            app:layout_constraintVertical_bias="1.0" />
+
+        <Button
+            android:id="@+id/firstMinus"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginEnd="8dp"
+            android:text="@string/minus_sign"
+            android:onClick="@{()-> viewmodel.firstTimeDecrease()}"
+            app:layout_constraintBottom_toTopOf="@id/firstProgressBar"
+            app:layout_constraintEnd_toStartOf="@id/setFirstTime"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toStartOf="@id/firstProgressBar"
+            app:layout_constraintTop_toBottomOf="@id/displayFirstTime" />
+
+        <Button
+            android:id="@+id/secondPlus"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginTop="0dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="0dp"
+            android:text="@string/plus_sign"
+            android:onClick="@{()->viewmodel.secondTimeIncrease()}"
+            app:layout_constraintBottom_toTopOf="@id/secondProgressBar"
+            app:layout_constraintEnd_toEndOf="@id/secondProgressBar"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toEndOf="@id/setSecondTime"
+            app:layout_constraintTop_toBottomOf="@id/displaySecondTime" />
+
+        <Button
+            android:id="@+id/secondMinus"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginEnd="8dp"
+            android:text="@string/minus_sign"
+            app:layout_constraintBottom_toTopOf="@id/secondProgressBar"
+            app:layout_constraintEnd_toStartOf="@id/setSecondTime"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toStartOf="@id/secondProgressBar"
+            app:layout_constraintTop_toBottomOf="@id/displaySecondTime" />
+
+        <ProgressBar
+            android:id="@+id/secondProgressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <ProgressBar
+            android:id="@+id/firstProgressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toTopOf="@id/secondProgressBar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/startPause" />
+
+        <EditText
+            android:id="@+id/numberOfSets"
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="4dp"
+            android:digits="0123456789"
+            android:ems="10"
+            android:imeOptions="actionDone"
+            android:inputType="number"
+            android:textAlignment="center"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toStartOf="@id/setsIncrease"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@id/setsDecrease"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Sets: 8/29" />
+
+        <Button
+            android:id="@+id/setsIncrease"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/plus_sign"
+            app:layout_constraintStart_toEndOf="@id/numberOfSets"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/setsDecrease"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/minus_sign"
+            app:layout_constraintEnd_toStartOf="@id/numberOfSets"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintHorizontal_chainStyle="spread_inside"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
