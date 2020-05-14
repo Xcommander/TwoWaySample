@@ -2,13 +2,17 @@ package com.qihoo.samples.twowaysample.ui
 
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.view.View
+import android.view.animation.DecelerateInterpolator
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.databinding.BindingAdapter
 import com.qihoo.samples.twowaysample.R
 
 object AnimationBindingAdapters {
     private const val BG_COLOR_ANIMATION_DURATION = 500L
+    private const val VERTICAL_BIAS_ANIMATION_DURATION = 900L
 
     @BindingAdapter(value = ["animateBackground", "animateBackgroundStage"], requireAll = true)
     @JvmStatic
@@ -48,6 +52,33 @@ object AnimationBindingAdapters {
             ObjectAnimator.ofObject(view, "backgroundColor", ArgbEvaluator(), colorRes, colorRes2)
         }
         animator.duration = BG_COLOR_ANIMATION_DURATION
+        animator.start()
+    }
+
+    @BindingAdapter(value = ["animateVerticalBias", "animateVerticalBiasState"], requireAll = true)
+    @JvmStatic
+    fun animateVerticalBias(view: View, timerRunning: Boolean, activeStage: Boolean) {
+        when {
+            timerRunning && activeStage -> animateVerticalBias(view, 0.6f)
+            timerRunning && !activeStage -> animateVerticalBias(view, 0.4f)
+            else -> animateVerticalBias(view, 0.5f)
+        }
+
+    }
+
+    private fun animateVerticalBias(view: View, position: Float) {
+        val layoutParams: ConstraintLayout.LayoutParams =
+            view.layoutParams as ConstraintLayout.LayoutParams
+        val animator = ValueAnimator.ofFloat(layoutParams.verticalBias, position)
+        animator.addUpdateListener { animation ->
+            val newParams: ConstraintLayout.LayoutParams =
+                view.layoutParams as ConstraintLayout.LayoutParams
+            val animatedValue = animation.animatedValue as Float
+            newParams.verticalBias = animatedValue
+            view.requestLayout()
+        }
+        animator.interpolator = DecelerateInterpolator()
+        animator.duration = VERTICAL_BIAS_ANIMATION_DURATION
         animator.start()
     }
 }

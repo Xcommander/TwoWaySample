@@ -4,8 +4,11 @@ import android.util.Log
 import androidx.databinding.Bindable
 import androidx.databinding.ObservableInt
 import com.qihoo.samples.twowaysample.BR
+import com.qihoo.samples.twowaysample.data.IntervalTimerViewModel.TimerStates.PAUSED
+import com.qihoo.samples.twowaysample.data.IntervalTimerViewModel.TimerStates.STARTED
 import com.qihoo.samples.twowaysample.util.ObservableViewModel
 import com.qihoo.samples.twowaysample.util.Timer
+import com.qihoo.samples.twowaysample.util.cleanSecondsString
 import java.util.*
 import kotlin.math.round
 
@@ -25,6 +28,22 @@ class IntervalTimerViewModel(private val timer: Timer) : ObservableViewModel() {
     var firstTimeDisplayTime = ObservableInt(firstTimePerSetValue.get())
     var secondTimeDisplayTime = ObservableInt(secondTimePerSetValue.get())
 
+    private var numberOfSetsTotal = INITIAL_NUMBER_OF_SETS
+    private var numberOfSetsElapsed = 0
+    var numberOfSets: Array<Int> = emptyArray()
+        @Bindable get() {
+            return arrayOf(numberOfSetsElapsed, numberOfSetsTotal)
+        }
+        set(value) {
+            val newTotal = value[1]
+            //没有发生变化
+            if (newTotal == numberOfSets[1]) return
+            if (newTotal != 0 && newTotal > numberOfSetsElapsed) {
+                field = value
+                numberOfSetsTotal = newTotal
+            }
+            notifyPropertyChanged(BR.numberOfSets)
+        }
 
     /**
      *在observable对象中，要使对象的属性，能给随时更新到UI对应的属性中去，一定要在对象属性的get方法添加@Bindable注解
@@ -37,7 +56,7 @@ class IntervalTimerViewModel(private val timer: Timer) : ObservableViewModel() {
         @Bindable
         get() {
             Log.e("xulinchao", "get")
-            return state == TimerStates.STARTED
+            return state == STARTED
         }
         set(value) {
             Log.e("xulinchao", "set")
@@ -60,7 +79,7 @@ class IntervalTimerViewModel(private val timer: Timer) : ObservableViewModel() {
             TimerStates.STOPPED -> {
                 stoppedToStart()
             }
-            TimerStates.STARTED -> {
+            STARTED -> {
 
             }
 
@@ -70,7 +89,7 @@ class IntervalTimerViewModel(private val timer: Timer) : ObservableViewModel() {
                 //开始计时,注意这里是在子线程中，所以说子线程中更新观察值，然后观察值更新到UI上，所以说采用
                 //数据绑定的好处之一，不必关心子线程操作UI，因为子线程操作的观察值，然后观察值再通知到UI,
                 // 最好UI来进行更新
-                if (state == TimerStates.STARTED) {
+                if (state == STARTED) {
                     //进行更新
                     updateCountdowns()
                 }
@@ -105,6 +124,18 @@ class IntervalTimerViewModel(private val timer: Timer) : ObservableViewModel() {
         }
 
 
+    }
+
+    fun setsDecrease() {
+        if (numberOfSetsTotal > numberOfSetsElapsed + 1) {
+            numberOfSetsTotal -= 1
+            notifyPropertyChanged(BR.numberOfSets)
+        }
+    }
+
+    fun setsIncrease() {
+        numberOfSetsTotal += 1
+        notifyPropertyChanged(BR.numberOfSets)
     }
 
     private fun updateFirstTimeValue(time: Long) {
@@ -154,19 +185,37 @@ class IntervalTimerViewModel(private val timer: Timer) : ObservableViewModel() {
         timePerSet.set(newValue.coerceAtLeast(min))
     }
 
+    fun timePerFirstChanged(newValue: CharSequence) {
+        firstTimePerSetValue.set(cleanSecondsString(newValue.toString()))
+        if (!timerRunning) {
+            firstTimeDisplayTime.set(firstTimePerSetValue.get())
+        }
+    }
+
+    fun timePerSecondChanged(newValue: CharSequence) {
+        secondTimePerSetValue.set(cleanSecondsString(newValue.toString()))
+        if (isSecondTimeAndRunning()) {
+            secondTimeDisplayTime.set(secondTimePerSetValue.get())
+        }
+    }
+
+    private fun isSecondTimeAndRunning(): Boolean {
+        return (state == PAUSED || state == STARTED)
+                && firstTimeDisplayTime.get() == 0
+    }
+
 
     private fun pausedToStart() {
         //根据时间差，重新设置起始时间
         timer.updatePauseTime()
-        state = TimerStates.STARTED
+        state = STARTED
         notifyPropertyChanged(BR.timerRunning)
-
     }
 
     //reset所有状态
     private fun stoppedToStart() {
         timer.resetStartTime()
-        state = TimerStates.STARTED
+        state = STARTED
         notifyPropertyChanged(BR.timerRunning)
     }
 
